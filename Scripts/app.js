@@ -8,44 +8,72 @@ const { setTimeout } = require('timers');
 const url = "http://117.252.249.5/StudentPortal/Login.aspx";
 
 
-let studentsJson = fs.readFileSync("Rolls.json");
+let studentsJson = fs.readFileSync("../Output/Rolls.json");
 let students = JSON.parse(studentsJson); // JSO
 
 let scoreCards = [];
 
+function delay(time) {
+    return new Promise(function (resolve) {
+        setTimeout(resolve, time)
+    });
+}
 let funAfterLogin = async function (page, i, flag) {
-    console.log("Sleeping");
-    // await setTimeout(2000); //This donot work
-    (async () => await new Promise(resolve => setTimeout(resolve, 500)))(); //This work->To sleep
-    console.log("Slept");
-    
-    if (flag == true) { return false; }
-    if (flag == false) {
-        console.log("falg = ", flag, "line No. 90")
-        await page.waitForNavigation();
+    // console.log("Sleeping");
+    // // await setTimeout(2000); //This donot work
+    // (async () => await new Promise(resolve => setTimeout(resolve, 1000)))(); //This work->To sleep
+    // console.log("Slept");
+
+    try {
+        if (flag == true) { return false; }
+        if (flag == false) {
+            console.log("falg = ", flag, "line No. 24")
+            await page.waitForNavigation();
+        }
+
+
+        await page.waitForSelector("select[name='ddlSemester'] option")
+        let arr = await page.$$("select[name='ddlSemester'] option")
+
+        console.log(arr.length);
+        if (arr.length < 8) {
+            return true;
+        }
+
+
+        await page.select("select[name='ddlSemester']", '7')
+        await page.waitForSelector("#btnimgShowResult")
+        await page.click("#btnimgShowResult")
+        // await delay(300)
+
+
+        //NAME
+        await page.waitForSelector("#lblStudentName")
+        const name = await page.$eval("#lblStudentName", element => element.innerText)
+
+
+        //SGPA
+        await page.waitForSelector("#lblSPI")
+        const sgpa = await page.$eval("#lblSPI", element => element.innerText)
+        // console.log();
+
+        await page.waitForSelector("#lblCPI")
+        const cgpa = await page.$eval("#lblCPI", element => element.innerText)
+        console.log("CGPA = ", cgpa, " SGPA = ", sgpa);
+
+        let obj = {};
+        obj.roll = students[i].slice(-3);
+        obj.name = name;
+        obj.sgpa = sgpa;
+        obj.cgpa = cgpa;
+
+        scoreCards.push(obj);
+        console.log("processed ", i, " student\n");
+        
+    } catch (err) {
+        console.log("Result Selectors not found");
+        return false;
     }
-
-    await page.select("select[name='ddlSemester']", '7')
-    await page.waitForSelector("#btnimgShowResult")
-    await page.click("#btnimgShowResult")
-
-
-    //SGPA
-    await page.waitForSelector("#lblSPI")
-    const sgpa = await page.$eval("#lblSPI", element => element.innerText)
-    // console.log();
-
-    await page.waitForSelector("#lblCPI")
-    const cgpa = await page.$eval("#lblCPI", element => element.innerText)
-    console.log("CGPA = ", cgpa, " SGPA = ", sgpa);
-
-    let obj = {};
-    obj.roll = students[i].slice(-3);
-    obj.sgpa = sgpa;
-    obj.cgpa = cgpa;
-
-    scoreCards.push(obj);
-    console.log("processed ", i, " student\n");
 
 }
 
@@ -74,7 +102,7 @@ try {
                 console.log("Resetting password for ", i, ' student');
                 await ResetPassword(browser, students[i]); // password is reset
                 flag = true;
-                await page.reload(); //for fresh login try
+                // await page.reload(); //for fresh login try
                 console.log("flag = ", flag);
             }
         });
@@ -90,25 +118,37 @@ try {
 
             await page.waitForSelector("#txt_username")
             await page.click("#txt_username")
+            // await delay(300)
 
             //type username
             await page.waitForSelector("#txt_username")
             // await page.type("#txt_username", students[i], { delay: 100 })
             await page.type("#txt_username", students[i])
+            // await delay(300)
+
 
 
             await page.waitForSelector("#txt_password")
             await page.click("#txt_password")
+            // await delay(300)
+
 
             //type password
             await page.waitForSelector("#txt_password")
             // await page.type("#txt_password", "123456", { delay: 100 })
             await page.type("#txt_password", "123456")
+            // await delay(300)
+
 
 
             flag = false;
             await page.waitForSelector("input[name='btnSubmit']")
             await page.click("input[name='btnSubmit']")
+            // await delay(300)
+
+
+            await page.keyboard.press("Enter")
+
 
 
             let bool = await funAfterLogin(page, i, flag); //There is sleep inside fun
