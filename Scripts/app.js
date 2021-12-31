@@ -2,14 +2,11 @@ let puppeteer = require('puppeteer-core');
 let fs = require('fs');
 const chromePaths = require("chrome-paths")
 const CHROME_PATH = chromePaths.chrome;
-const url = "http://117.252.249.5/StudentPortal/Login.aspx";
-const url2 = "http://117.252.249.5/StudentPortal/ForgetPassword.aspx";
-
-// url = "http://117.252.249.5/StudentPortal/ForgetPassword.aspx";
-
-
 let ResetPassword = require('./ResetPassword');
 const { setTimeout } = require('timers');
+
+const url = "http://117.252.249.5/StudentPortal/Login.aspx";
+
 
 let studentsJson = fs.readFileSync("Rolls.json");
 let students = JSON.parse(studentsJson); // JSO
@@ -64,40 +61,35 @@ try {
             defaultViewport: null // open website in full browser'screen
         });
 
-        // let pages = await browser.pages();
-        let flag = false; //alert not came
-        // let page = pages[0];
         let page = await browser.newPage();
+        // let pages = await browser.pages();
+        //Event Listener
         page.on("dialog", async dialog => {
             //  console.log("dailog = ", dialog);
 
-            if (dialog._handled == false) {
+            if (dialog._handled == false) { //This is imp
                 await dialog.dismiss();
                 // console.log(dialog.message());
-                // await dialog.dismiss();
-                // await page.keyboard.press('Enter')
-                // continue; //🛑
                 console.log("Alert Flag encountered");
                 console.log("Resetting password for ", i, ' student');
                 await ResetPassword(browser, students[i]); // password is reset
                 flag = true;
                 await page.reload(); //for fresh login try
-                // continue;
-                // i = i - 1;
                 console.log("flag = ", flag);
             }
         });
 
+        let flag = false; //alert not came
+
         let i = 0;
+        //We can't use For-Loop (when there is Event listeners)
         while (i < students.length) {
             console.log(i, students[i]);
             await page.goto(url)
-            // console.log(students[0]);
 
 
             await page.waitForSelector("#txt_username")
             await page.click("#txt_username")
-
 
             //type username
             await page.waitForSelector("#txt_username")
@@ -105,10 +97,8 @@ try {
             await page.type("#txt_username", students[i])
 
 
-
             await page.waitForSelector("#txt_password")
             await page.click("#txt_password")
-
 
             //type password
             await page.waitForSelector("#txt_password")
@@ -120,15 +110,11 @@ try {
             await page.waitForSelector("input[name='btnSubmit']")
             await page.click("input[name='btnSubmit']")
 
-            // console.log("Timer starts");
-            // const c = setTimeout(function () { console.log("Timer of 2000"); }, 5000)
-            // console.log("Timer ends");
 
-            let bool = await funAfterLogin(page, i, flag);
+            let bool = await funAfterLogin(page, i, flag); //There is sleep inside fun
             if (bool === false || flag === true) { continue; }
 
             i++;
-
         }
 
         fs.writeFileSync("../Output/Scores.json", JSON.stringify(scoreCards))
